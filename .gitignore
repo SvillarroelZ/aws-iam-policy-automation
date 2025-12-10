@@ -1,0 +1,64 @@
+# AWS Credentials and sensitive data
+*.pem
+*.ppk
+*.key
+.aws/
+credentials
+config
+.env
+.env.local
+.env.*
+aws_credentials*
+
+# Lab-specific files
+labsuser.*
+awsstudent.*
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv/
+pip-log.txt
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Backup and temporary files
+*.bak
+*.old
+*_OLD.*
+*_backup.*
+*.tmp
+*.temp
+*.log
+
+# Downloaded policies (if you want to keep them out of version control)
+# Uncomment the line below if policies should not be committed
+# policies/*.json
