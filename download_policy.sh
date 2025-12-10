@@ -221,25 +221,32 @@ lookup_policy() {
   
   log "Looking up policy '$policy_name' in customer-managed policies..."
   
-  local policy_arn version_id
+  local policy_arn version_id raw_arn raw_version
   
-  policy_arn="$("$AWS_CMD" iam list-policies \
+  raw_arn="$("$AWS_CMD" iam list-policies \
     --scope Local \
     --query "Policies[?PolicyName=='${policy_name}'].Arn | [0]" \
-    --output text 2>&1)"
+    --output text)"
   
-  if [[ $? -ne 0 || -z "$policy_arn" || "$policy_arn" == "None" ]]; then
+  # Clean ARN from whitespace
+  policy_arn=$(echo "$raw_arn" | xargs)
+  
+  if [[ -z "$policy_arn" || "$policy_arn" == "None" ]]; then
     log "Policy '$policy_name' not found. Available policies:"
     "$AWS_CMD" iam list-policies --scope Local --query 'Policies[].PolicyName' --output text 2>&1 || true
     error_exit 4 "Policy '$policy_name' was not found in customer-managed policies."
   fi
   
-  version_id="$("$AWS_CMD" iam list-policies \
-    --scope Local \
-    --query "Policies[?PolicyName=='${policy_name}'].DefaultVersionId | [0]" \
-    --output text 2>&1)"
+  # Get version ID directly from get-policy (more reliable)
+  raw_version="$("$AWS_CMD" iam get-policy \
+    --policy-arn "$policy_arn" \
+    --query "Policy.DefaultVersionId" \
+    --output text)"
   
-  if [[ $? -ne 0 || -z "$version_id" || "$version_id" == "None" ]]; then
+  # Clean version ID from whitespace
+  version_id=$(echo "$raw_version" | xargs)
+  
+  if [[ -z "$version_id" || "$version_id" == "None" ]]; then
     error_exit 5 "Could not determine DefaultVersionId for policy '$policy_name'."
   fi
   
@@ -256,13 +263,17 @@ download_policy() {
   local version_id="$2"
   local output_file="$3"
   
+  # Clean inputs from any whitespace
+  policy_arn=$(echo "$policy_arn" | xargs)
+  version_id=$(echo "$version_id" | xargs)
+  
   log "Downloading policy document to: $output_file"
   
   if ! "$AWS_CMD" iam get-policy-version \
     --policy-arn "$policy_arn" \
     --version-id "$version_id" \
     --query "PolicyVersion.Document" \
-    --output json > "$output_file" 2>&1; then
+    --output json > "$output_file"; then
     rm -f "$output_file"
     error_exit 6 "Failed to download policy document from AWS IAM."
   fi

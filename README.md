@@ -35,7 +35,7 @@ Automates downloading IAM policy documents with credential validation, interacti
 
 **Features:** Credential validation, user policy discovery, interactive selection, file overwrite protection, clean JSON output
 
----
+
 
 ## Architecture
 
@@ -53,7 +53,7 @@ Local Terminal → AWS Cloud (STS + IAM) → File System (policies/)
 7. Download policy (IAM GetPolicyVersion)
 5. Save JSON to policies/
 
----
+
 
 ## Installation
 
@@ -98,7 +98,7 @@ pip3 install -r requirements.txt
 }
 ```
 
----
+
 
 ## AWS Credentials
 
@@ -147,7 +147,7 @@ Expected output:
 }
 ```
 
----
+
 
 ## Usage
 
@@ -172,7 +172,7 @@ AWS_PROFILE=production ./download_policy.sh
 cat policies/lab_policy.json | jq .
 ```
 
----
+
 
 ## Testing
 
@@ -194,7 +194,7 @@ TOTAL                             235     15    94%
 - Integration: AWS CLI, credentials, policy operations, file overwrite protection
 - Security: No credentials in git, proper permissions, safe logging
 
----
+
 
 ## Security
 **Protected files (`.gitignore`):**
@@ -211,7 +211,7 @@ TOTAL                             235     15    94%
 - Script doesn't log secret keys
 - File permissions: 755 (not world-writable)
 
----
+
 
 ## Troubleshooting
 
@@ -240,7 +240,7 @@ chmod +x download_policy.sh
 sudo apt-get install -y jq
 ```
 
----
+
 
 ## Repository Structure
 

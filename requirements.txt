@@ -1,10 +1,9 @@
-# System Dependencies (install with package manager)
-# Ubuntu/Debian: sudo apt-get install -y jq curl unzip python3 python3-pip
-# Red Hat/CentOS: sudo yum install -y jq curl unzip python3 python3-pip
-# macOS: brew install jq curl python3
 
-# Python Testing Dependencies (install with pip3 install -r requirements.txt)
+# Python dependencies for AWS IAM Policy Downloader
+awscli>=2.0.0
 pytest>=7.4.0
 pytest-cov>=4.1.0
 boto3>=1.28.0
 moto>=4.2.0
+
+
