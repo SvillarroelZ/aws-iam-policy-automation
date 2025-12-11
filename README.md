@@ -45,7 +45,7 @@ graph TD
 
 ```mermaid
 graph TD
-  Dev - Developer Terminal --> Creds (Configure credentials)
+  Dev --> Developer Terminal --> Creds (Configure credentials)
   Dev --> Script (Run script)
   Script --> STS(Validate credentials (STS))
   STS --> Script
