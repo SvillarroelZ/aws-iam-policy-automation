@@ -17,69 +17,78 @@ This project validates skills in cloud automation, infrastructure scripting, and
 
 ---
 
-## Architecture Diagram
+
+## Project Structure Diagram
 
 ```mermaid
 graph TD
-    subgraph "Local Development"
-        Dev[Developer Terminal]
-        Script[download_policy.sh<br/>Bash Automation]
-        Files[policies/*.json<br/>Downloaded Artifacts]
-    end
+  A[aws-iam-policy-automation/] --> B[download_policy.sh]
+  A --> C[requirements.txt]
+  A --> D[.gitignore]
+  A --> E[README.md]
+  A --> F[policies/]
+  F --> G[lab_policy.json]
+  A --> H[screenshots/]
+  H --> I[2.png]
+  H --> J[3.png]
+  H --> K[4.png]
+  H --> L[5.png]
+  H --> M[7.png]
+  H --> N[10.png]
+  A --> O[tests/]
+  O --> P[__init__.py]
+  O --> Q[test_download_policy.py]
+  O --> R[test_security.py]
+```
 
-    subgraph "AWS Cloud (us-west-1)"
-        EC2[EC2 Red Hat Instance]
-        subgraph "IAM & STS"
-            IAM[AWS IAM]
-            STS[AWS STS]
-            User[IAM User: awsstudent]
-            Policy[lab_policy v1]
-            Creds[Access Keys<br/>~/.aws/credentials]
-        end
-    end
+## Automation Workflow Diagram
 
-    Dev -->|Configure credentials| Creds
-    Dev -->|Run script| Script
-    Script -->|Validate credentials| STS
-    STS -->|Return ARN/Account| Script
-    Script -->|List attached policies| IAM
-    Script -->|Show menu| Dev
-    Dev -->|Select by number/name| Script
-    Script -->|Resolve ARN/version| IAM
-    Script -->|Download policy JSON| IAM
-    IAM -->|Return JSON| Script
-    Script -->|Validate & save| Files
-
-    User -.->|Attached| Policy
-    Creds -.->|Authenticates| User
-
-    style Dev fill:#e3f2fd
-    style Script fill:#c8e6c9
-    style Files fill:#fff9c4
-    style EC2 fill:#ffe0b2
-    style IAM fill:#fce4ec
-    style STS fill:#f3e5f5
-    style User fill:#e1bee7
-    style Policy fill:#ffccbc
-    style Creds fill:#ffebee
+```mermaid
+graph TD
+  Dev[Developer Terminal] --> Creds[Configure credentials]
+  Dev --> Script[Run script]
+  Script --> STS[Validate credentials (STS)]
+  STS --> Script
+  Script --> IAM[List attached policies]
+  Script --> Menu[Show menu]
+  Menu --> Dev[Select by number/name]
+  Script --> ARN[Resolve ARN/version]
+  Script --> Download[Download policy JSON]
+  Download --> Validate[Validate & save JSON]
+  Validate --> Files[policies/*.json]
+  User -.-> Policy[lab_policy attached]
+  Creds -.-> User[Authenticates]
 ```
 
 ---
 
+
 ## Project Structure
+
+```
 aws-iam-policy-automation/
+│
 ├── download_policy.sh         # Main automation script (Bash, modular design)
 ├── requirements.txt           # Python testing dependencies
 ├── .gitignore                 # Security exclusions
 ├── README.md                  # Technical documentation
+│
 ├── policies/                  # Downloaded policy artifacts
 │   └── lab_policy.json
+│
 ├── screenshots/               # Documentation assets
-│   └── [1-10].png
+│   ├── 2.png
+│   ├── 3.png
+│   ├── 4.png
+│   ├── 5.png
+│   ├── 7.png
+│   └── 10.png
+│
 └── tests/                     # Test suite (integration & security)
-    ├── __init__.py
-    ├── test_download_policy.py  # Integration tests
-    └── test_security.py         # Security tests
+  ├── __init__.py
+  ├── test_download_policy.py  # Integration tests
+  └── test_security.py         # Security tests
+```
 
 ---
 
