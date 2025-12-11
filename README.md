@@ -56,8 +56,8 @@ graph TD
   Script --> Download[Download policy JSON]
   Download --> Validate[Validate & save JSON]
   Validate --> Files[policies/*.json]
-  User -.-> Policy[lab_policy attached]
-  Creds -.-> User[Authenticates]
+  User --> Policy[lab_policy attached]
+  Creds --> User[Authenticates]
 ```
 
 
