@@ -45,19 +45,19 @@ graph TD
 
 ```mermaid
 graph TD
-  Dev --> Developer Terminal --> Creds (Configure credentials)
-  Dev --> Script (Run script)
-  Script --> STS(Validate credentials (STS))
+  Dev --> Developer Terminal --> Configure credentials
+  Dev --> Run script
+  Script --> Validate credentials
   STS --> Script
-  Script --> IAM(List attached policies)
-  Script --> Menu(Show menu)
-  Menu --> Dev(Select by number/name)
-  Script --> ARN(Resolve ARN/version)
-  Script --> Download(Download policy JSON)
-  Download --> Validate(Validate & save JSON)
-  Validate --> Files(policies/*.json)
-  User --> Policy(lab_policy attached)
-  Creds --> User(Authenticates)
+  Script --> IAM List attached policies
+  Script --> Menu
+  Menu --> Select by number or name
+  Script --> Resolve ARN version
+  Script --> Download policy JSON
+  Download --> Validate & save JSON
+  Validate --> Files  policies/*.json
+  User --> Policy lab_policy attached
+  Creds --> User Authenticates
 ```
 
 
