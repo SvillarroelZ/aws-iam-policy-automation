@@ -60,7 +60,7 @@ graph TD
   Creds -.-> User[Authenticates]
 ```
 
----
+
 
 
 ## Project Structure
