@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""
-Security tests for the AWS CLI IAM Policy Downloader project.
-
-Validates that:
-1. No credentials are exposed in the repository
-2. .gitignore properly excludes sensitive files
-3. Scripts don't log sensitive information
-4. File permissions are appropriate
-"""
+# Security tests: credential protection, gitignore, file permissions
 
 import os
 import re
@@ -17,21 +9,21 @@ import pytest
 
 
 class TestSecurityCompliance:
-    """Security and compliance tests."""
+    # Verify security best practices
     
     @pytest.fixture(autouse=True)
     def setup(self):
-        """Setup test environment."""
+        # Set repo paths
         self.repo_root = Path(__file__).parent.parent
         self.gitignore_path = self.repo_root / ".gitignore"
     
     def test_gitignore_exists(self):
-        """Test 1: Verify .gitignore file exists."""
+        """Verify gitignore file exists."""
         assert self.gitignore_path.exists(), ".gitignore must exist"
         assert self.gitignore_path.is_file(), ".gitignore must be a file"
     
     def test_gitignore_excludes_credentials(self):
-        """Test 2: Verify .gitignore excludes AWS credential files."""
+        """Verify gitignore excludes AWS credential files."""
         gitignore_content = self.gitignore_path.read_text()
         
         critical_patterns = [
@@ -47,7 +39,7 @@ class TestSecurityCompliance:
                 f".gitignore must exclude {pattern}"
     
     def test_gitignore_excludes_python_cache(self):
-        """Test 3: Verify .gitignore excludes Python cache files."""
+        """Verify gitignore excludes Python cache files."""
         gitignore_content = self.gitignore_path.read_text()
         
         python_patterns = [
@@ -61,7 +53,7 @@ class TestSecurityCompliance:
                 f".gitignore must exclude {pattern}"
     
     def test_no_credentials_in_tracked_files(self):
-        """Test 4: Verify no AWS credentials are committed to git."""
+        """Verify no AWS credentials in git tracked files."""
         # Check git tracked files for potential credentials
         result = subprocess.run(
             ["git", "ls-files"],
@@ -97,9 +89,12 @@ class TestSecurityCompliance:
                     matches = re.findall(pattern, content)
                     if len(matches) > 0:
                         violations.append(f"{file_path}: pattern {pattern}")
-            except Exception:
+            except Exception as e:
                 # Skip files that can't be read as text
                 continue
+        
+        assert len(violations) == 0, \
+            f"No credentials should be in tracked files: {violations}"
     def test_script_permissions(self):
         """Test 5: Verify script has executable permissions."""
         script_path = self.repo_root / "download_policy.sh"
@@ -108,30 +103,22 @@ class TestSecurityCompliance:
         assert os.access(script_path, os.X_OK), \
             "download_policy.sh should be executable"
         
-        # Check that permissions are not too permissive (should not be world-writable)
         stat_info = script_path.stat()
         mode = stat_info.st_mode
         
-        # Check if world-writable (others have write permission)
         world_writable = bool(mode & 0o002)
         if world_writable:
-            # Provide helpful message
             oct_mode = oct(mode)[-3:]
             pytest.fail(
                 f"Script should not be world-writable (current: {oct_mode}). "
                 f"Run: chmod 755 download_policy.sh"
             )
-        # Check if world-writable (others have write permission)
-        world_writable = bool(mode & 0o002)
-        assert not world_writable, \
-            "Script should not be world-writable (security risk)"
     
     def test_no_hardcoded_secrets_in_script(self):
-        """Test 6: Verify script doesn't contain hardcoded secrets."""
+        """Verify script doesn't contain hardcoded secrets."""
         script_path = self.repo_root / "download_policy.sh"
         script_content = script_path.read_text()
         
-        # Patterns that might indicate hardcoded secrets
         secret_patterns = [
             (r"AKIA[0-9A-Z]{16}", "AWS Access Key ID"),
             (r"aws_access_key_id\s*=\s*['\"]?AKIA", "Hardcoded Access Key"),
@@ -145,8 +132,11 @@ class TestSecurityCompliance:
                 f"Potential {description} found in script"
     
     def test_readme_security_section_exists(self):
-        """Test 7: Verify README contains security considerations."""
+        """Verify README contains security section."""
         readme_path = self.repo_root / "README.md"
+        
+        assert readme_path.exists(), "README.md should exist"
+        
         readme_content = readme_path.read_text()
         
         assert "Security" in readme_content or "security" in readme_content, \
@@ -225,6 +215,19 @@ class TestScriptOutputSecurity:
         
         assert len(violations) == 0, \
             f"requirements.txt should not contain credentials in URLs: {violations}"
+    
+    def test_gitignore_protects_json_files(self):
+        """Test 12: Verify .gitignore protects JSON policy files."""
+        gitignore_path = Path(__file__).parent.parent / ".gitignore"
+        
+        if not gitignore_path.exists():
+            pytest.fail(".gitignore file must exist for security")
+        
+        gitignore_content = gitignore_path.read_text()
+        
+        # Should contain pattern for JSON files
+        assert "*.json" in gitignore_content or "policies/" in gitignore_content, \
+            ".gitignore should protect JSON policy files from accidental commits"
 
 
 if __name__ == "__main__":

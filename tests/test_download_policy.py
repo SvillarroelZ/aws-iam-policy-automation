@@ -1,19 +1,6 @@
 #!/usr/bin/env python3
-"""
-Integration tests for download_policy.sh script.
-
-These tests verify the core functionality of the policy download script:
-1. AWS CLI availability check
-2. Credential validation
-3. Policy lookup and retrieval
-4. File overwrite protection
-5. Output directory creation
-
-Requirements:
-- AWS CLI v2 installed
-- Valid AWS credentials configured
-- IAM permissions for sts:GetCallerIdentity and iam:ListPolicies
-"""
+# Integration tests for download_policy.sh
+# Verifies AWS CLI, credentials, policy operations, and file handling
 
 import subprocess
 import os
@@ -25,35 +12,59 @@ import pytest
 
 
 class TestDownloadPolicyScript:
-    """Test suite for download_policy.sh bash script."""
+    def test_interactive_selection_by_number(self):
+        """Test: Select policy by number in interactive menu (robust)."""
+        # Primero obtenemos la lista de políticas disponibles
+        policies_result = subprocess.run([
+            "aws", "iam", "list-policies", "--scope", "Local", "--query", "Policies[].PolicyName", "--output", "text"
+        ], capture_output=True, text=True)
+        policy_names = policies_result.stdout.strip().split()
+        if len(policy_names) >= 2:
+            # Si hay al menos dos políticas, selecciona la segunda por número
+            result = self.run_script(input_text="2\n")
+            assert result.returncode == 0 or result.returncode == 4, "Script should handle selection by number"
+            assert "Selected policy" in result.stderr or "No customer-managed policies found" in result.stderr or "Policy document saved successfully" in result.stderr
+        elif len(policy_names) == 1:
+            # Si solo hay una, selecciona la primera por número
+            result = self.run_script(input_text="1\n")
+            assert result.returncode == 0 or result.returncode == 4, "Script should handle selection by number"
+            assert "Selected policy" in result.stderr or "No customer-managed policies found" in result.stderr or "Policy document saved successfully" in result.stderr
+        else:
+            # Si no hay políticas, el test valida el mensaje de error
+            result = self.run_script(input_text="1\n")
+            assert result.returncode != 0, "Script should fail if no policies exist"
+            assert "No customer-managed policies found" in result.stderr or "Invalid selection" in result.stderr
+
+    def test_interactive_selection_by_name(self):
+        """Test: Select policy by name in interactive menu."""
+        # Simula que el usuario escribe el nombre de la política
+        result = self.run_script(input_text="lab_policy\n")
+        assert result.returncode == 0 or result.returncode == 4, "Script should handle selection by name"
+        assert "Selected policy" in result.stderr or "No customer-managed policies found" in result.stderr
+
+    def test_invalid_selection(self):
+        """Test: Invalid selection in interactive menu."""
+        # Simula entrada inválida
+        result = self.run_script(input_text="9999\n")
+        assert result.returncode != 0, "Script should exit with error for invalid selection"
+        assert "Invalid selection" in result.stderr or "No customer-managed policies found" in result.stderr
+    # Test script functionality with real AWS environment
     
     @pytest.fixture(autouse=True)
     def setup(self):
-        """Setup test environment before each test."""
+        # Create temp directory for test outputs
         self.script_path = Path(__file__).parent.parent / "download_policy.sh"
         self.test_output_dir = tempfile.mkdtemp(prefix="test_policies_")
         yield
-        # Cleanup after test
         if os.path.exists(self.test_output_dir):
             shutil.rmtree(self.test_output_dir)
     
     def run_script(self, args=None, env=None, input_text=None):
-        """
-        Helper method to run the download_policy.sh script.
-        
-        Args:
-            args: List of command-line arguments
-            env: Environment variables dict
-            input_text: String to send to stdin
-        
-        Returns:
-            CompletedProcess object with returncode, stdout, stderr
-        """
+        """Execute script and return result."""
         cmd = [str(self.script_path)]
         if args:
             cmd.extend(args)
         
-        # Merge current environment with custom env vars
         run_env = os.environ.copy()
         if env:
             run_env.update(env)
@@ -68,7 +79,7 @@ class TestDownloadPolicyScript:
         return result
     
     def test_aws_cli_installed(self):
-        """Test 1: Verify AWS CLI is installed and accessible."""
+        """Verify AWS CLI is installed."""
         result = subprocess.run(
             ["aws", "--version"],
             capture_output=True,
@@ -78,12 +89,12 @@ class TestDownloadPolicyScript:
         assert "aws-cli" in result.stdout, "Should return AWS CLI version"
     
     def test_script_exists_and_executable(self):
-        """Test 2: Verify the script file exists and is executable."""
+        """Verify script exists and has execute permission."""
         assert self.script_path.exists(), f"Script should exist at {self.script_path}"
         assert os.access(self.script_path, os.X_OK), "Script should be executable"
     
     def test_aws_credentials_configured(self):
-        """Test 3: Verify AWS credentials are properly configured."""
+        """Verify AWS credentials are configured."""
         result = subprocess.run(
             ["aws", "sts", "get-caller-identity"],
             capture_output=True,
@@ -100,13 +111,15 @@ class TestDownloadPolicyScript:
             assert len(identity["Account"]) == 12, "Account ID should be 12 digits"
         except json.JSONDecodeError:
             pytest.fail("get-caller-identity should return valid JSON")
+        except Exception as e:
+            pytest.fail(f"Unexpected error checking caller identity: {e}")
     
     def test_script_requires_aws_cli(self):
         """Test 4: Script should fail gracefully if AWS CLI is not in PATH."""
         # Run script with AWS_CMD pointing to non-existent binary
         result = self.run_script(env={"AWS_CMD": "/nonexistent/aws"})
         
-        assert result.returncode != 0, "Script should exit with error code"
+        assert result.returncode == 1, "Script should exit with code 1 for missing AWS CLI"
         assert "AWS CLI not found" in result.stderr, "Should show AWS CLI not found message"
     
     def test_script_validates_credentials(self):
@@ -115,25 +128,22 @@ class TestDownloadPolicyScript:
         # We provide a policy name to avoid interactive prompts
         result = self.run_script(args=["nonexistent_policy", self.test_output_dir])
         
-        # Script should validate credentials (shown in stderr)
         assert "Validating AWS credentials" in result.stderr or \
                "Credentials are valid" in result.stderr, \
                "Script should validate credentials"
     
     def test_script_creates_output_directory(self):
-        """Test 6: Script should create output directory if it doesn't exist."""
+        """Verify script creates output directory if missing."""
         new_output_dir = os.path.join(self.test_output_dir, "new_subdir")
         assert not os.path.exists(new_output_dir), "Directory shouldn't exist yet"
         
-        # Run script with non-existent output directory
-        # It will fail to find the policy, but should create the directory
         result = self.run_script(args=["nonexistent_policy", new_output_dir])
         
         assert os.path.exists(new_output_dir), "Script should create output directory"
         assert os.path.isdir(new_output_dir), "Output path should be a directory"
     
     def test_script_handles_nonexistent_policy(self):
-        """Test 7: Script should handle requests for non-existent policies gracefully."""
+        """Verify script handles non-existent policies gracefully."""
         fake_policy_name = "this_policy_definitely_does_not_exist_12345"
         result = self.run_script(args=[fake_policy_name, self.test_output_dir])
         
@@ -141,18 +151,16 @@ class TestDownloadPolicyScript:
         assert "was not found" in result.stderr, "Should indicate policy was not found"
     
     def test_script_shows_user_policies(self):
-        """Test 8: Script should list policies attached to current user."""
-        # Run in interactive mode (no args) and immediately send Ctrl+D to stdin
+        """Verify script lists policies attached to current user."""
         result = self.run_script(input_text="\n")
         
-        # Should show fetching policies (even if there are none)
         output = result.stderr + result.stdout
         assert "Fetching policies" in output or \
                "attached to user" in output, \
                "Script should attempt to fetch user policies"
     
     def test_list_customer_managed_policies(self):
-        """Test 9: Verify we can list customer-managed policies via AWS CLI."""
+        """Verify AWS CLI can list customer-managed policies."""
         result = subprocess.run(
             ["aws", "iam", "list-policies", "--scope", "Local", "--max-items", "5"],
             capture_output=True,
@@ -173,6 +181,8 @@ class TestDownloadPolicyScript:
                 assert "Arn" in policy
         except json.JSONDecodeError:
             pytest.fail("list-policies should return valid JSON")
+        except Exception as e:
+            pytest.fail(f"Unexpected error listing policies: {e}")
     
     def test_script_file_overwrite_protection(self):
         """Test 10: Script should ask for confirmation before overwriting existing files."""
@@ -191,23 +201,21 @@ class TestDownloadPolicyScript:
             input_text="n\n"
         )
         
-        # File should not be overwritten when user says no
         with open(test_policy_path, "r") as f:
             content = f.read()
         
         assert content == original_content, \
                "Original file should not be modified when user says no"
         
-        # Script should exit successfully (exit 0) when user cancels
         assert result.returncode == 0, \
                "Script should exit successfully when download is cancelled"
 
 
 class TestAWSCLIIntegration:
-    """Integration tests for AWS CLI commands used by the script."""
+    """AWS CLI integration tests."""
     
     def test_sts_get_caller_identity(self):
-        """Test STS GetCallerIdentity API call."""
+        """Verify STS GetCallerIdentity works."""
         result = subprocess.run(
             ["aws", "sts", "get-caller-identity", "--output", "json"],
             capture_output=True,
@@ -222,7 +230,7 @@ class TestAWSCLIIntegration:
         assert identity["Arn"].startswith("arn:aws:iam::"), "ARN should have correct format"
     
     def test_iam_list_policies(self):
-        """Test IAM ListPolicies API call."""
+        """Verify IAM ListPolicies works."""
         result = subprocess.run(
             ["aws", "iam", "list-policies", "--scope", "Local", "--max-items", "1"],
             capture_output=True,
@@ -234,7 +242,6 @@ class TestAWSCLIIntegration:
         response = json.loads(result.stdout)
         assert "Policies" in response, "Response should contain Policies"
         
-        # If there are policies, validate structure
         if len(response["Policies"]) > 0:
             policy = response["Policies"][0]
             assert "PolicyName" in policy, "Policy should have PolicyName"
@@ -242,7 +249,7 @@ class TestAWSCLIIntegration:
             assert "DefaultVersionId" in policy, "Policy should have DefaultVersionId"
     
     def test_jq_installed(self):
-        """Test that jq is installed and working."""
+        """Verify jq is installed."""
         result = subprocess.run(
             ["jq", "--version"],
             capture_output=True,
@@ -253,8 +260,7 @@ class TestAWSCLIIntegration:
         assert "jq" in result.stdout, "Should return jq version"
     
     def test_jq_json_parsing(self):
-        """Test jq can parse AWS CLI JSON output."""
-        # Get identity and parse with jq
+        """Verify jq can parse AWS CLI JSON output."""
         aws_result = subprocess.run(
             ["aws", "sts", "get-caller-identity"],
             capture_output=True,
@@ -274,7 +280,7 @@ class TestAWSCLIIntegration:
 
 
 def test_repository_structure():
-    """Test 11: Verify repository has correct structure."""
+    """Verify repository has correct structure."""
     repo_root = Path(__file__).parent.parent
     
     # Check required files exist
@@ -283,7 +289,6 @@ def test_repository_structure():
     assert (repo_root / ".gitignore").exists(), ".gitignore should exist"
     assert (repo_root / "requirements.txt").exists(), "requirements.txt should exist"
     
-    # Check .gitignore excludes credentials
     gitignore_content = (repo_root / ".gitignore").read_text()
     assert "credentials" in gitignore_content, ".gitignore should exclude credentials"
     assert ".aws/" in gitignore_content, ".gitignore should exclude .aws directory"
@@ -291,16 +296,13 @@ def test_repository_structure():
 
 
 def test_packages_file_format():
-    """Test 12: Verify requirements.txt contains necessary dependencies."""
+    """Verify requirements.txt has necessary dependencies."""
     repo_root = Path(__file__).parent.parent
     requirements_file = repo_root / "requirements.txt"
     
     content = requirements_file.read_text()
     
-    # Should contain pytest for testing
     assert "pytest" in content.lower(), "requirements.txt should include pytest"
-    
-    # Should contain comments explaining structure
     assert "#" in content, "requirements.txt should have comments"
 
 
