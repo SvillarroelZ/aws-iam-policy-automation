@@ -17,52 +17,6 @@ This project validates skills in cloud automation, infrastructure scripting, and
 
 ---
 
-
-## Project Structure Diagram
-
-```mermaid
-graph TD
-  A[aws-iam-policy-automation/] --> B[download_policy.sh]
-  A --> C[requirements.txt]
-  A --> D[.gitignore]
-  A --> E[README.md]
-  A --> F[policies/]
-  F --> G[lab_policy.json]
-  A --> H[screenshots/]
-  H --> I[2.png]
-  H --> J[3.png]
-  H --> K[4.png]
-  H --> L[5.png]
-  H --> M[7.png]
-  H --> N[10.png]
-  A --> O[tests/]
-  O --> P[__init__.py]
-  O --> Q[test_download_policy.py]
-  O --> R[test_security.py]
-```
-
-## Automation Workflow Diagram
-
-```mermaid
-graph TD
-  Dev --> Developer Terminal --> Configure credentials
-  Dev --> Run script
-  Script --> Validate credentials
-  STS --> Script
-  Script --> IAM List attached policies
-  Script --> Menu
-  Menu --> Select by number or name
-  Script --> Resolve ARN version
-  Script --> Download policy JSON
-  Download --> Validate & save JSON
-  Validate --> Files  policies/*.json
-  User --> Policy lab_policy attached
-  Creds --> User Authenticates
-```
-
-
-
-
 ## Project Structure
 
 ```
@@ -91,6 +45,29 @@ aws-iam-policy-automation/
 ```
 
 ---
+
+
+## Automation Workflow Diagram
+
+```mermaid
+graph TD
+  Dev --> Configure credentials
+  Dev --> Run script
+  Script --> Validate credentials
+  STS --> Script
+  Script --> IAM List attached policies
+  Script --> Menu
+  Menu --> Select by number or name
+  Script --> Resolve ARN version
+  Script --> Download policy JSON
+  Download --> Validate & save JSON
+  Validate --> Files  policies/*.json
+  User --> Policy lab_policy attached
+  Creds --> User Authenticates
+```
+
+
+
 
 ## Core Components
 
